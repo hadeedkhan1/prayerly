@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <script defer src="script.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1 id="username"></h1>
+    <p>Streak: <span id="streak"></span></p>
+    <p>Avg Prayers: <span id="avgPrayers"></span></p>
+    <p>Most Missed: <span id="mostMissed"></span></p>
+    
+    <canvas id="chart"></canvas>
+
+    <h2>Log a Prayer</h2>
+    <button onclick="logPrayer('fajr')">Fajr</button>
+    <button onclick="logPrayer('dhuhr')">Dhuhr</button>
+    <button onclick="logPrayer('asr')">Asr</button>
+    <button onclick="logPrayer('maghrib')">Maghrib</button>
+    <button onclick="logPrayer('isha')">Isha</button>
+</body>
+</html>
