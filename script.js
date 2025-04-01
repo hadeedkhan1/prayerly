@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzRbRtvLAiG0KZ6k-FwKA_Yz0hqm_MU0QGUfsAqXwR_ygH6y5kKMaGIJk032sGQuhUe/exec";
 
 // Load leaderboard
 async function loadLeaderboard() {
