@@ -47,23 +47,34 @@ async function logPrayer(prayer) {
 async function loadUserProfile() {
     const params = new URLSearchParams(window.location.search);
     const username = params.get("username");
-    if (!username) return;
+    
+    if (!username) {
+        console.error("Username not found in URL");
+        return;
+    }
 
-    document.getElementById("usernameDisplay").innerText = username;
+    console.log(`Loading data for: ${username}`);
 
     try {
         const response = await fetch(API_URL);
         const data = await response.json();
-        const userData = data[username];
 
-        if (userData) {
-            document.getElementById("streak").innerText = userData.streak;
-            document.getElementById("avgPrayers").innerText = userData.avgPrayers;
-            document.getElementById("mostMissed").innerText = userData.mostMissed;
+        if (!data[username]) {
+            console.error("User not found in data:", data);
+            alert("User not found. Try registering again.");
+            return;
         }
+
+        const userData = data[username];
+        console.log("User data loaded:", userData);
+
+        document.getElementById("streak").innerText = userData.streak || 0;
+        document.getElementById("avgPrayers").innerText = userData.avgPrayers || 0;
+        document.getElementById("mostMissed").innerText = userData.mostMissed || "None";
+
     } catch (error) {
-        alert("Error loading user data.");
-        console.error(error);
+        console.error("Error loading user data:", error);
+        alert("Error loading user data. Please try again later.");
     }
 }
 
