@@ -69,11 +69,22 @@ async function loadUserProfile() {
 
 // Attach prayer buttons dynamically
 document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById("signupForm")) return;
+    console.log("DOM fully loaded.");
+    
+    // Attach event listeners to prayer buttons
+    const buttons = document.querySelectorAll(".prayerButton");
+    
+    if (buttons.length === 0) {
+        console.error("Prayer buttons not found.");
+    } else {
+        console.log("Buttons found:", buttons);
+        buttons.forEach(button => {
+            button.addEventListener("click", () => {
+                console.log(`Button clicked: ${button.dataset.prayer}`);
+                logPrayer(button.dataset.prayer);
+            });
+        });
+    }
 
-    document.querySelectorAll(".prayerButton").forEach(button => {
-        button.addEventListener("click", () => logPrayer(button.dataset.prayer));
-    });
-
-    loadUserProfile();
+    loadUserProfile(); // Load user data
 });
