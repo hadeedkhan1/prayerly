@@ -57,7 +57,16 @@ async function loadUserProfile() {
 
     try {
         const response = await fetch(API_URL);
-        const data = await response.json();
+        const text = await response.text();
+        console.log("Raw response:", text);  // Debugging
+
+        try {
+            const data = JSON.parse(text);
+            console.log("Parsed JSON:", data);
+        } catch (error) {
+            console.error("Error parsing JSON:", error);
+        }
+
 
         if (!data[username]) {
             console.error("User not found in data:", data);
