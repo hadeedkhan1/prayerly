@@ -1,27 +1,54 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzRbRtvLAiG0KZ6k-FwKA_Yz0hqm_MU0QGUfsAqXwR_ygH6y5kKMaGIJk032sGQuhUe/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzRbRtvLAiG0KZ6k-FwKA_Yz0hqm_MU0QGUfsAqXwR_ygH6y5kKMaGIJk032sGQuhUe/exec"; // Replace with your API URL
 
-// Load leaderboard
-async function loadLeaderboard() {
-    const response = await fetch(API_URL);
-    const data = await response.json();
-    const leaderboard = document.getElementById("leaderboard");
+// Function to register a new user
+document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.getElementById("username").value.trim();
 
-    Object.keys(data).forEach(username => {
-        let row = leaderboard.insertRow();
-        row.insertCell(0).innerHTML = `<a href="user.html?username=${username}">${username}</a>`;
-        row.insertCell(1).innerText = data[username].streak;
-        row.insertCell(2).innerText = data[username].avgPrayers;
+    if (!username) {
+        alert("Please enter a username.");
+        return;
+    }
+
+    const response = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "register", username }),
+        headers: { "Content-Type": "application/json" }
     });
+
+    const result = await response.text();
+    alert(result);
+
+    if (result === "User registered successfully") {
+        window.location.href = `user.html?username=${username}`;
+    }
+});
+
+// Function to log a prayer
+async function logPrayer(prayer) {
+    const params = new URLSearchParams(window.location.search);
+    const username = params.get("username");
+    if (!username) return;
+
+    const response = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "logPrayer", username, prayer }),
+        headers: { "Content-Type": "application/json" }
+    });
+
+    const result = await response.text();
+    alert(result);
+    loadUserProfile(); // Refresh data
 }
 
-// Load user profile
+// Function to load user profile
 async function loadUserProfile() {
     const params = new URLSearchParams(window.location.search);
     const username = params.get("username");
     if (!username) return;
 
     document.getElementById("username").innerText = username;
-    
+
     const response = await fetch(API_URL);
     const data = await response.json();
     const userData = data[username];
@@ -29,38 +56,10 @@ async function loadUserProfile() {
     document.getElementById("streak").innerText = userData.streak;
     document.getElementById("avgPrayers").innerText = userData.avgPrayers;
     document.getElementById("mostMissed").innerText = userData.mostMissed;
-
-    drawChart(userData.prayers);
 }
 
-// Log prayer
-async function logPrayer(prayer) {
-    const params = new URLSearchParams(window.location.search);
-    const username = params.get("username");
-    if (!username) return;
-
-    await fetch(`${API_URL}?username=${username}&prayer=${prayer}`);
-    alert("Prayer logged!");
-    loadUserProfile();
-}
-
-// Draw GitHub-style chart
-function drawChart(data) {
-    const ctx = document.getElementById("chart").getContext("2d");
-    new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"],
-            datasets: [{
-                label: "Prayers Logged",
-                data: data,
-                backgroundColor: ["#3498db", "#e74c3c", "#f1c40f", "#2ecc71", "#9b59b6"]
-            }]
-        }
-    });
-}
-
+// Initialize correct page functions
 document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById("leaderboard")) loadLeaderboard();
-    if (document.getElementById("username")) loadUserProfile();
+    if (document.getElementById("signupForm")) return;
+    loadUserProfile();
 });
