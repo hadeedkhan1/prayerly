@@ -1,110 +1,100 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzRbRtvLAiG0KZ6k-FwKA_Yz0hqm_MU0QGUfsAqXwR_ygH6y5kKMaGIJk032sGQuhUe/exec"; // Replace with your actual deployment URL
+var SHEET_ID = "1STfg5oEY1J2zAeNaOb1yE0iKemnOBsiuZHSUI9_W49w";  // Replace with your actual Google Sheets ID
+var SHEET_NAME = "Users";
 
-// Function to register a new user
-document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const username = document.getElementById("username").value.trim();
+function doGet(e) {
+  var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  var data = sheet.getDataRange().getValues();
+  var response = {};
 
-    if (!username) {
-        alert("Please enter a username.");
-        return;
-    }
+  data.forEach((row, index) => {
+    if (index === 0) return; // Skip header
+    var username = row[0];
+    response[username] = {
+      date: row[1],
+      prayers: row.slice(2, 7), // Fajr, Dhuhr, Asr, Maghrib, Isha
+      streak: row[7],
+      avgPrayers: row[8],
+      mostMissed: row[9]
+    };
+  });
 
-    try {
-        const response = await fetch(`${API_URL}?action=register&username=${encodeURIComponent(username)}`);
-        const result = await response.text();
-        alert(result);
+  var output = ContentService.createTextOutput(JSON.stringify(response))
+    .setMimeType(ContentService.MimeType.JSON);
 
-        if (result === "User registered successfully") {
-            window.location.href = `user.html?username=${username}`;
-        }
-    } catch (error) {
-        alert("Error registering user. Please try again.");
-        console.error(error);
-    }
-});
+  // Ensure CORS headers are included
+  output.setHeader("Access-Control-Allow-Origin", "*");  // Allow any origin
+  output.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");  // Allowed methods
+  output.setHeader("Access-Control-Allow-Headers", "Content-Type");  // Allowed headers
 
-// Function to log a prayer
-async function logPrayer(prayer) {
-    const params = new URLSearchParams(window.location.search);
-    const username = params.get("username");
-    if (!username) {
-        alert("User not found. Please sign up.");
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_URL}?action=updatePrayer&username=${encodeURIComponent(username)}&prayer=${encodeURIComponent(prayer)}`);
-        const result = await response.text();
-        alert(result);
-    } catch (error) {
-        alert("Error logging prayer. Please try again.");
-        console.error(error);
-    }
+  return output;
 }
 
-// Function to load user profile
-async function loadUserProfile() {
-    const params = new URLSearchParams(window.location.search);
-    const username = params.get("username");
-    
-    if (!username) {
-        console.error("Username not found in URL");
-        return;
-    }
+function doPost(e) {
+  var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  var params = JSON.parse(e.postData.contents);
 
-    console.log(`Loading data for: ${username}`);
+  var response = ContentService.createTextOutput().setMimeType(ContentService.MimeType.JSON);
+  // Ensure CORS headers are included
+  response.setHeader("Access-Control-Allow-Origin", "*");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-    try {
-        const response = await fetch(API_URL);
-        const text = await response.text();
-        console.log("Raw response:", text);  // Debugging
-
-        try {
-            const data = JSON.parse(text);
-            console.log("Parsed JSON:", data);
-        } catch (error) {
-            console.error("Error parsing JSON:", error);
-        }
-
-
-        if (!data[username]) {
-            console.error("User not found in data:", data);
-            alert("User not found. Try registering again.");
-            return;
-        }
-
-        const userData = data[username];
-        console.log("User data loaded:", userData);
-
-        document.getElementById("streak").innerText = userData.streak || 0;
-        document.getElementById("avgPrayers").innerText = userData.avgPrayers || 0;
-        document.getElementById("mostMissed").innerText = userData.mostMissed || "None";
-
-    } catch (error) {
-        console.error("Error loading user data:", error);
-        alert("Error loading user data. Please try again later.");
-    }
+  if (params.action === "register") {
+    return registerUser(params.username, sheet);
+  } else if (params.action === "logPrayer") {
+    return logPrayer(params.username, params.prayer, sheet);
+  } else if (params.action === "getUser") {
+    return getUser(params.username, sheet);
+  } else {
+    response.setContent("No action specified");
+    return response;
+  }
 }
 
-// Attach prayer buttons dynamically
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM fully loaded.");
-    
-    // Attach event listeners to prayer buttons
-    const buttons = document.querySelectorAll(".prayerButton");
-    
-    if (buttons.length === 0) {
-        console.error("Prayer buttons not found.");
-    } else {
-        console.log("Buttons found:", buttons);
-        buttons.forEach(button => {
-            button.addEventListener("click", () => {
-                console.log(`Button clicked: ${button.dataset.prayer}`);
-                logPrayer(button.dataset.prayer);
-            });
-        });
-    }
+function registerUser(username, sheet) {
+  var existingUsers = sheet.getDataRange().getValues().map(row => row[0]);
+  if (existingUsers.includes(username)) {
+    return ContentService.createTextOutput(JSON.stringify({ message: "User already exists" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
-    loadUserProfile(); // Load user data
-});
+  sheet.appendRow([username, new Date().toISOString().split('T')[0], 0, 0, 0, 0, 0, 0, 0, "None"]);
+  return ContentService.createTextOutput(JSON.stringify({ message: "User registered successfully" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function logPrayer(username, prayer, sheet) {
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === username) {
+      var row = i + 1;
+      var col = ["fajr", "dhuhr", "asr", "maghrib", "isha"].indexOf(prayer) + 2;
+      sheet.getRange(row, col + 1).setValue(data[i][col] + 1);
+      return ContentService.createTextOutput(JSON.stringify({ message: "Prayer logged!" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ message: "User not found!" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getUser(username, sheet) {
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === username) {
+      var row = i + 1;
+      var user = {
+        username: data[i][0],
+        streak: data[i][7],
+        avgPrayers: data[i][8],
+        mostMissed: data[i][9]
+      };
+      return ContentService.createTextOutput(JSON.stringify(user))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ message: "User not found!" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
