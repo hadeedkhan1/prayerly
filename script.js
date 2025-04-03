@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzRbRtvLAiG0KZ6k-FwKA_Yz0hqm_MU0QGUfsAqXwR_ygH6y5kKMaGIJk032sGQuhUe/exec"; // Replace with your API URL
+const API_URL = "https://script.google.com/macros/s/AKfycbzRbRtvLAiG0KZ6k-FwKA_Yz0hqm_MU0QGUfsAqXwR_ygH6y5kKMaGIJk032sGQuhUe/exec"; // Replace with your actual deployment URL
 
 // Function to register a new user
 document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
@@ -10,31 +10,37 @@ document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
         return;
     }
 
-    const response = await fetch(`${API_URL}?action=register&username=${encodeURIComponent(username)}`);
-    const result = await response.text();
-    alert(result);
+    try {
+        const response = await fetch(`${API_URL}?action=register&username=${encodeURIComponent(username)}`);
+        const result = await response.text();
+        alert(result);
 
-    if (result === "User registered successfully") {
-        window.location.href = `user.html?username=${username}`;
+        if (result === "User registered successfully") {
+            window.location.href = `user.html?username=${username}`;
+        }
+    } catch (error) {
+        alert("Error registering user. Please try again.");
+        console.error(error);
     }
 });
-
 
 // Function to log a prayer
 async function logPrayer(prayer) {
     const params = new URLSearchParams(window.location.search);
     const username = params.get("username");
-    if (!username) return;
+    if (!username) {
+        alert("User not found. Please sign up.");
+        return;
+    }
 
-    const response = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "logPrayer", username, prayer }),
-        headers: { "Content-Type": "application/json" }
-    });
-
-    const result = await response.text();
-    alert(result);
-    loadUserProfile(); // Refresh data
+    try {
+        const response = await fetch(`${API_URL}?action=updatePrayer&username=${encodeURIComponent(username)}&prayer=${encodeURIComponent(prayer)}`);
+        const result = await response.text();
+        alert(result);
+    } catch (error) {
+        alert("Error logging prayer. Please try again.");
+        console.error(error);
+    }
 }
 
 // Function to load user profile
@@ -43,19 +49,31 @@ async function loadUserProfile() {
     const username = params.get("username");
     if (!username) return;
 
-    document.getElementById("username").innerText = username;
+    document.getElementById("usernameDisplay").innerText = username;
 
-    const response = await fetch(API_URL);
-    const data = await response.json();
-    const userData = data[username];
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        const userData = data[username];
 
-    document.getElementById("streak").innerText = userData.streak;
-    document.getElementById("avgPrayers").innerText = userData.avgPrayers;
-    document.getElementById("mostMissed").innerText = userData.mostMissed;
+        if (userData) {
+            document.getElementById("streak").innerText = userData.streak;
+            document.getElementById("avgPrayers").innerText = userData.avgPrayers;
+            document.getElementById("mostMissed").innerText = userData.mostMissed;
+        }
+    } catch (error) {
+        alert("Error loading user data.");
+        console.error(error);
+    }
 }
 
-// Initialize correct page functions
+// Attach prayer buttons dynamically
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("signupForm")) return;
+
+    document.querySelectorAll(".prayerButton").forEach(button => {
+        button.addEventListener("click", () => logPrayer(button.dataset.prayer));
+    });
+
     loadUserProfile();
 });
