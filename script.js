@@ -10,12 +10,7 @@ document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
         return;
     }
 
-    const response = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "register", username }),
-        headers: { "Content-Type": "application/json" }
-    });
-
+    const response = await fetch(`${API_URL}?action=register&username=${encodeURIComponent(username)}`);
     const result = await response.text();
     alert(result);
 
@@ -23,6 +18,7 @@ document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
         window.location.href = `user.html?username=${username}`;
     }
 });
+
 
 // Function to log a prayer
 async function logPrayer(prayer) {
