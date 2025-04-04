@@ -1,26 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prayer Tracker</title>
-    <script defer src="script.js"></script>
-    <link rel="stylesheet" href="styles.css">
+  <title>Prayer Tracker</title>
+  <style>
+    .heatmap-day {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin: 1px;
+      background-color: #ebedf0;
+    }
+    .heatmap-day.filled { background-color: #40c463; }
+  </style>
 </head>
 <body>
-    <h1>Prayer Tracker Leaderboard</h1>
-    <table id="leaderboard">
-        <tr>
-            <th>Username</th>
-            <th>Streak</th>
-            <th>Avg Prayers</th>
-        </tr>
-    </table>
+  <h2>Prayer Tracker</h2>
+  <input type="text" id="username" placeholder="Enter username" />
+  <br><br>
+  <div id="buttons">
+    <button onclick="logPrayer('Fajr')">Fajr</button>
+    <button onclick="logPrayer('Dhuhr')">Dhuhr</button>
+    <button onclick="logPrayer('Asr')">Asr</button>
+    <button onclick="logPrayer('Maghrib')">Maghrib</button>
+    <button onclick="logPrayer('Isha')">Isha</button>
+  </div>
+  <h3>Heatmap</h3>
+  <div id="heatmap"></div>
 
-    <h2>Sign Up</h2>
-    <form id="signupForm">
-        <input type="text" id="username" placeholder="Username" required>
-        <button type="submit">Sign Up</button>
-    </form>
+  <script>
+    const scriptURL = "YOUR_DEPLOYED_WEB_APP_URL";
+
+    async function logPrayer(prayer) {
+      const username = document.getElementById("username").value;
+      if (!username) return alert("Enter a username");
+
+      const res = await fetch(`${scriptURL}?action=logPrayer&username=${username}&prayer=${prayer}`);
+      const text = await res.text();
+      alert(text);
+      loadHeatmap();
+    }
+
+    async function loadHeatmap() {
+      const username = document.getElementById("username").value;
+      if (!username) return;
+
+      const res = await fetch(`${scriptURL}?action=getData&username=${username}`);
+      const data = await res.json();
+      const container = document.getElementById("heatmap");
+      container.innerHTML = '';
+
+      const dateMap = {};
+      data.forEach(d => {
+        const count = Object.values(d.prayers).filter(x => x === "✅").length;
+        dateMap[d.date] = count;
+      });
+
+      const today = new Date();
+      for (let i = 89; i >= 0; i--) {
+        const day = new Date(today);
+        day.setDate(day.getDate() - i);
+        const dateStr = day.toISOString().split('T')[0];
+        const level = dateMap[dateStr] || 0;
+        const box = document.createElement("div");
+        box.className = "heatmap-day";
+        if (level > 0) box.classList.add("filled");
+        container.appendChild(box);
+      }
+    }
+
+    document.getElementById("username").addEventListener("change", loadHeatmap);
+  </script>
 </body>
 </html>
